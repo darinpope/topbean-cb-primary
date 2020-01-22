@@ -65,7 +65,7 @@ spec:
             dir("project-b") {
               container("sbt") {
                 sh """
-                  sbt version
+                  echo put sbt here
                 """
               }
               container("jfrog") {
