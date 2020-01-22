@@ -8,7 +8,7 @@ kind: Pod
 spec:
   containers:
   - name: sbt
-    image: hseeberger/scala-sbt:8u222_1.3.7_2.13.1
+    image: upvest/scala-sbt-docker-k8:stable
     command:
     - cat
     tty: true
