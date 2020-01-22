@@ -50,6 +50,7 @@ spec:
               container("sbt") {
                 sh """
                   sbt clean docker:stage
+                  ls -l target/docker
                 """
               }
               container("jfrog") {
