@@ -23,7 +23,9 @@ spec:
   stages {
     stage("Build Prep") {
       steps {
-        echo "build prep"
+        sh """
+          sbt version
+        """
       }
     }
     stage("Build") {
