@@ -39,12 +39,34 @@ spec:
       parallel {
         stage("b1") {
           steps {
-            echo "b1"
+            dir("project-a") {
+              container("sbt") {
+                sh """
+                  sbt clean docker:stage
+                """
+              }
+              container("jfrog") {
+                sh """
+                  jfrog --version
+                """
+              }
+            }
           }
         }
         stage("b2") {
           steps {
-            echo "b2"
+            dir("project-b") {
+              container("sbt") {
+                sh """
+                  sbt clean docker:stage
+                """
+              }
+              container("jfrog") {
+                sh """
+                  jfrog --version
+                """
+              }
+            }
           }
         }
         stage("b3") {
