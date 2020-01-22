@@ -28,6 +28,11 @@ spec:
             sbt version
           """
         }
+        container("jfrog") {
+          sh """
+            jfrog --version
+          """
+        }
       }
     }
     stage("Build") {
