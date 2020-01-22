@@ -8,7 +8,7 @@ kind: Pod
 spec:
   containers:
   - name: sbt
-    image: upvest/scala-sbt-docker-k8:stable
+    image: colisweb/scala-sbt-gke:adoptopenjdk-11.0.5-slim-9.2.8.0-1.3.6
     command:
     - cat
     tty: true
@@ -58,7 +58,7 @@ spec:
             dir("project-b") {
               container("sbt") {
                 sh """
-                  sbt clean docker:stage
+                  sbt version
                 """
               }
               container("jfrog") {
