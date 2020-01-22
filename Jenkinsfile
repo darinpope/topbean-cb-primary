@@ -8,7 +8,7 @@ kind: Pod
 spec:
   containers:
   - name: sbt
-    image: colisweb/scala-sbt-gke:adoptjdk8-1.2.8-8.11.3-9.2.6.0
+    image: colisweb/scala-sbt-gke:adoptopenjdk-11.0.5-slim-9.2.8.0-1.3.6
     command:
     - cat
     tty: true
