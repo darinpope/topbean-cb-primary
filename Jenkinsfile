@@ -13,8 +13,8 @@ spec:
     - cat
     tty: true
     volumeMounts:
-      - name: dockersock
-        mountPath: "/var/run/docker.sock"
+    - name: dockersock
+      mountPath: "/var/run/docker.sock"
   - name: jfrog
     image: docker.bintray.io/jfrog/jfrog-cli-go:1.31.0
     command:
@@ -50,7 +50,7 @@ spec:
               container("sbt") {
                 sh """
                   sbt clean docker:stage
-                  ls -l target/docker
+                  ls -l target/docker/stage
                 """
               }
               container("jfrog") {
