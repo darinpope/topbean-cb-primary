@@ -12,11 +12,18 @@ spec:
     command:
     - cat
     tty: true
+    volumeMounts:
+      - name: dockersock
+        mountPath: "/var/run/docker.sock"
   - name: jfrog
     image: docker.bintray.io/jfrog/jfrog-cli-go:1.31.0
     command:
     - cat
     tty: true
+  volumes:
+    - name: dockersock
+      hostPath:
+        path: /var/run/docker.sock  
 """
     }
   }
