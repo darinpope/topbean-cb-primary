@@ -1,7 +1,7 @@
 pipeline {
   agent {
     kubernetes {
-      label 'sbt-jfrog'
+      label "sbt-jfrog"
       yaml """
 apiVersion: v1
 kind: Pod
