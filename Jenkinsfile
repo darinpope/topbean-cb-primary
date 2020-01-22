@@ -23,9 +23,11 @@ spec:
   stages {
     stage("Build Prep") {
       steps {
-        sh """
-          sbt version
-        """
+        container("sbt") {
+          sh """
+            sbt version
+          """
+        }
       }
     }
     stage("Build") {
