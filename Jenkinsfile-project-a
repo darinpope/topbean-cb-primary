@@ -32,6 +32,7 @@ pipeline {
             sh """
               pwd
               ls -last
+              touch fred.txt
               ./eb-package.sh
               ls -last
             """
