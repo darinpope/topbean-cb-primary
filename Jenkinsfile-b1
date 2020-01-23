@@ -1,0 +1,191 @@
+pipeline {
+    agent { label 'build' }
+   
+    stages {
+		when { 
+            expression{env.SKIP_BUILDANDUPLOAD == 'NO'}
+        }
+		stages {
+			stage("Build Preparation") {
+				steps {
+					sh  '''
+						mkdir -p $WORKSPACE/BTrackAdpRepo                                
+						mkdir -p $WORKSPACE/MIAM-Repo
+
+						mkdir -p $WORKSPACE/MIAM-UI-Repo
+						if [ -d $WORKSPACE/MIAM-UI-Repo/.ebextensions ]
+						then
+							rm -rf $WORKSPACE/MIAM-UI-Repo/.ebextensions 
+						fi
+						
+						mkdir -p $WORKSPACE/BTS-CMS-Repo
+					'''
+					
+					script{
+						strBranch = env.GIT_BRANCH
+						strTrTkt = strBranch.split('-')[2] + "-" + strBranch.split('-')[3] 
+						TRACKING_TKT = "${strTrTkt}"
+						
+						if ("$env.PREV_TRACKING_TKT" == '') {
+							strPrevTrTkt = "${TRACKING_TKT}"
+						} else {
+							strPrevTrTkt = "${PREV_TRACKING_TKT}"
+						}
+						
+						triggerRemoteJob mode: [$class: 'AwaitResult', timeout: [timeoutStr: '1d'], whenFailure: [$class: 'StopAsFailure'], 
+						whenTimeout: [$class: 'StopAsFailure'], whenUnstable: [$class: 'StopAsFailure']], 
+						parameterFactories: [[$class: 'SimpleString', name: 'CRNT_TRACKING_TKT', value: "$TRACKING_TKT"],
+							[$class: 'SimpleString', name: 'PREV_TRACKING_TKT', value: "$strPrevTrTkt"],
+							[$class: 'SimpleString', name: 'ENV', value: "QA"],
+							[$class: 'SimpleString', name: 'PROJ_PL_DIRN', value: "BTS"],
+							[$class: 'SimpleString', name: 'PROJ_NAME', value: "BTS"]], 
+						remotePathMissing: [$class: 'StopAsFailure'], 
+						remotePathUrl: 'jenkins://ca27ab87a185c26e1d28ce25e5634f51/FDC_Release/xGet_Repo_Information'
+						
+						
+						DeployableJobs = sh (
+						script: '''
+							
+							TRACKING_TKT=$(echo $GIT_BRANCH| cut -d'-' -f 3)'-'$(echo $GIT_BRANCH| cut -d'-' -f 4)
+							file="/opt/jenkins/pipeline/Pipeline-Job-Controller_List_BTS.txt"
+							cat $file | while read line
+							do
+								if [[ $line == *BTS-CurrRUNJOBList-QA-${TRACKING_TKT},* ]]; 
+								then 
+									rhs=${line##*BTS-CurrRUNJOBList-QA-${TRACKING_TKT},}
+									echo ${rhs%% *}
+								fi
+							done
+							
+							''',
+							returnStdout: true
+						).trim()
+						
+						DeployableJobList = DeployableJobs.split(',')
+						echo "Deployable Job List: ${DeployableJobList}"
+					}
+					
+					dir("$env.WORKSPACE/MIAM-Repo") {
+						script {
+							if (DeployableJobList.contains('QA_BTrack_MIAM_API_Services_Deployment_Pipeline_Job') || DeployableJobList.contains('QA_BTrack_MIAM_Authorization_API_Services_Deployment_Pipeline_Job') || DeployableJobList.contains('QA_BTrack_MIAM_User_Management_UI_Deployment_Pipeline_Job')) {
+							
+								strFullBranch = env.GIT_BRANCH
+								strOnlyBranch = strFullBranch.split('/')[1] 
+					
+								git branch: "${strOnlyBranch}", url: 'git@bitbucket.org:firstdatacorp/fdmiam.git' , credentialsId: '09d9e8f0-0ae0-4af2-987a-aeacfdd0354b'
+							}
+						}
+					}
+					
+					dir("$env.WORKSPACE/MIAM-UI-Repo") {
+						script {
+							if (DeployableJobList.contains('QA_BTrack_MIAM_UI_Deployment_Pipeline_Job')) {
+								git branch: "${strOnlyBranch}", url: 'git@bitbucket.org:firstdatacorp/fdmiam-ui.git' , credentialsId: '09d9e8f0-0ae0-4af2-987a-aeacfdd0354b'
+							}  
+						}
+					}
+					
+					dir("$env.WORKSPACE/BTS-CMS-Repo") {
+						script {
+							if (DeployableJobList.contains('QA_BTrack_CMS_Deployment_Pipeline_Job')) {
+								git branch: "${strOnlyBranch}", url: 'git@bitbucket.org:firstdatacorp/fdbusinesstrackcms.git' , credentialsId: '09d9e8f0-0ae0-4af2-987a-aeacfdd0354b'
+							}
+						}
+					}
+					
+					dir("$env.WORKSPACE/BTrackAdpRepo") {
+						script {
+							if (DeployableJobList.contains('QA_BTrack_Adapters_Group_Deployment_Pipeline_Job') || DeployableJobList.contains('QA_BTrack_Clientline_Adapters_Group_Deployment_Pipeline_Job') || DeployableJobList.contains('QA_BTrack_Notification_Adapters_Group_Deployment_Pipeline_Job')) {
+								git branch: "${strOnlyBranch}", url: 'git@bitbucket.org:firstdatacorp/fdbt-eai.git' , credentialsId: '09d9e8f0-0ae0-4af2-987a-aeacfdd0354b'
+								sh  '''
+									mkdir -p $WORKSPACE/Btrk_Adp_Grp
+									cp -r $WORKSPACE/BTrackAdpRepo/* $WORKSPACE/Btrk_Adp_Grp/
+
+									mkdir -p $WORKSPACE/Clnt_Adp_Grp
+									cp -r $WORKSPACE/BTrackAdpRepo/* $WORKSPACE/Clnt_Adp_Grp/
+
+									mkdir -p $WORKSPACE/Ntf_Adp_Grp
+									cp -r $WORKSPACE/BTrackAdpRepo/* $WORKSPACE/Ntf_Adp_Grp/
+								'''
+							} 
+						}
+					}
+				}
+			}
+			
+			stage("Build") {
+				steps {
+						dir("$env.WORKSPACE/MIAM-Repo") {
+							script {
+								if (DeployableJobList.contains('QA_BTrack_MIAM_API_Services_Deployment_Pipeline_Job')) {
+									echo "BTrack_MIAM_API_Services Build Starts..."
+									withCredentials([usernamePassword(credentialsId: '1b1838dc-7a4e-4b24-a095-56bbdf799cf9', passwordVariable: 'artifactorypassword', usernameVariable: 'artifactoryusername')]) {
+										sh '''
+											#!/bin/sh
+											export GRADLE_OPTS="-Dorg.gradle.daemon=false"
+											cd $WORKSPACE/MIAM-Repo/security-management/security-management-api-services
+											
+											# Configuration files are moved from its environment directory to conf directory in respective ENV_BTrack_MIAM_API_Services_Deployment_Pipeline_Job
+											# configuration.
+											./build-dependencies
+											sbt clean docker:stage
+											cp -r $WORKSPACE/MIAM-Repo/security-management/security-management-core/environment-configs/dynatrace/ebextensions/nonprod  ./.ebextensions/
+											cp -r $WORKSPACE/MIAM-Repo/security-management/security-management-core/environment-configs/dynatrace/ebextensions/production  ./.ebextensions/
+											cp -r ./.ebextensions/ target/docker/stage
+											cd target/docker/stage
+											TRACKING_TKT=$(echo $GIT_BRANCH| cut -d'-' -f 3)'-'$(echo $GIT_BRANCH| cut -d'-' -f 4)
+											zip -r btrack-miam-api-services-${TRACKING_TKT} .
+
+											#prepare the artifactory
+											sourceFile="btrack-miam-api-services-${TRACKING_TKT}.zip"
+											artifact_md5=$(md5sum "$sourceFile" | sed -e 's/'"$sourceFile"'//g')
+											artifact_sha1=$(sha1sum "$sourceFile" | sed -e 's/'"$sourceFile"'//g')
+
+											#send the zip file to artifactory
+											curl -H "X-Checksum-Sha1:${artifact_sha1}" \
+											-H "X-Checksum-MD5:${artifact_md5}" \
+											-u ${artifactoryusername}:${artifactorypassword} \
+											-X PUT "https://devops-artifactory.firstdata.com/artifactory/releases/BTS/${sourceFile}" \
+											-T $sourceFile
+										'''
+									}
+									echo "BTrack_MIAM_API_Services Build and moving its Artifacts completed successfully."
+								}
+							}
+						}
+					)   
+				}
+				post {
+					success {
+						sh '''
+							pwd
+							cd $WORKSPACE/BTrackAdpRepo
+							ls
+							rm -rf $WORKSPACE/BTrackAdpRepo/*       
+							ls
+						'''
+						/*
+						build job: 'BTS_BuildsUpload_Artifactory_Pipeline_Job' , parameters: 
+							[[$class: 'StringParameterValue', name: 'TRACKING_TKT', value: "${TRACKING_TKT}"],
+							[$class: 'StringParameterValue', name: 'FILE_PATH', value: "$env.WORKSPACE"]]
+					
+						*/
+						echo 'All Builds completed successfully.'
+					}
+				}
+			}
+		}       
+    }
+}
+
+def ExecuteJob(JobName, TrTkt){
+    script {
+        println "Executing ${JobName} with parameter ${TrTkt}"
+        if ("$env.TEST_FLAG" == 'FALSE') {
+			retry(2) {
+				build job: "${JobName}" , parameters: 
+							 [[$class: 'StringParameterValue', name: 'TRACKING_TKT', value: "${TrTkt}"]]
+			}
+		}
+    }
+}
