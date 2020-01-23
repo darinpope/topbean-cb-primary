@@ -5,6 +5,9 @@ pipeline {
       yamlFile 'kubernetespod.yaml'
     }
   }
+  triggers {
+    eventTrigger jmespathQuery("event=='project-b'")
+  }
   environment {
     ARTIFACTORY_MAVEN=credentials("artifactory-maven")
     JFROG_CLI_OFFER_CONFIG=false
