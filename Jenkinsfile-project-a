@@ -26,6 +26,7 @@ pipeline {
           sh """
             sbt clean stage
             ./eb-package.sh
+            ls -last
           """
         }
       }
