@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: sbt
+    image: hseeberger/scala-sbt:8u222_1.3.7_2.13.1
+    command:
+    - cat
+    tty: true
+  - name: jfrog
+    image: docker.bintray.io/jfrog/jfrog-cli-go:1.31.0
+    command:
+    - cat
+    tty: true
