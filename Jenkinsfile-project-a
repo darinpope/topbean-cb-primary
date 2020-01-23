@@ -39,7 +39,7 @@ pipeline {
           }
           container("jfrog") {
             sh """
-              jfrog rt upload --url http://34.73.76.181/artifactory/topbean/ --user ${ARTIFACTORY_MAVEN_USR} --password ${ARTIFACTORY_MAVEN_PSW} "*.zip" topbean/project-a/
+              jfrog rt upload --url http://34.73.76.181/artifactory/topbean/ --user ${ARTIFACTORY_MAVEN_USR} --password ${ARTIFACTORY_MAVEN_PSW} "project-a*.zip" topbean/project-a/
             """
           }
         }
