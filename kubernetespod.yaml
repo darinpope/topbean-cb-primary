@@ -12,3 +12,8 @@ spec:
     command:
     - cat
     tty: true
+  - name: alpine-zip
+    image: kramos/alpine-zip:latest
+    command:
+    - cat
+    tty: true
