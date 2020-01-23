@@ -3,3 +3,9 @@ project-a/logs
 project-a/project
 project-a/target
 project-a/eb-package-prep
+project-a/*.zip
+project-b/logs
+project-b/project
+project-b/target
+project-b/eb-package-prep
+project-b/*.zip
