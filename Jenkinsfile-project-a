@@ -26,6 +26,10 @@ pipeline {
           container("sbt") {
             sh """
               sbt clean stage
+            """
+          }
+          container("alpine-zip") {
+            sh """
               ./eb-package.sh
               ls -last
             """
