@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 rm -rf eb-package-prep
 rm -f project-a-1.0-SNAPSHOT.zip
 
