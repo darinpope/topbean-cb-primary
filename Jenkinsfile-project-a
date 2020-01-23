@@ -5,6 +5,9 @@ pipeline {
       yamlFile 'kubernetespod.yaml'
     }
   }
+  environment {
+    ARTIFACTORY_MAVEN=credentials("artifactory-maven")
+  }
   stages {
     stage("Build Prep") {
       steps {
@@ -30,13 +33,13 @@ pipeline {
           }
           container("alpine-zip") {
             sh """
-              pwd
-              ls -last
-              touch fred.txt
               ./eb-package.sh
-              ls -last
             """
           }
+          container("jfrog") {
+            sh """
+              jfrog rt upload --url http://34.73.76.181/artifactory/topbean/ --user ${ARTIFACTORY_MAVEN_USR} --password ${ARTIFACTORY_MAVEN_PSW} "*.zip" topbean/project-a/
+            """
         }
       }
     }
