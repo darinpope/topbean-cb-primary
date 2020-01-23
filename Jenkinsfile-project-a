@@ -1,0 +1,34 @@
+pipeline {
+  agent{
+    kubernetes {
+      label 'project-a'
+      yamlFile 'kubernetespod.yaml'
+    }
+  }
+  stages {
+    stage("Build Prep") {
+      steps {
+        container("sbt") {
+          sh """
+            sbt version
+          """
+        }
+        container("jfrog") {
+          sh """
+            jfrog --version
+          """
+        }
+      }
+    }
+    stage("project-a Build") {
+      steps {
+        dir("project-a") {
+          sh """
+            sbt clean stage
+            ./eb-package.sh
+          """
+        }
+      }
+    }
+  }
+}
