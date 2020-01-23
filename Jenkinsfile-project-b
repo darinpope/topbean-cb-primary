@@ -1,0 +1,49 @@
+pipeline {
+  agent{
+    kubernetes {
+      label 'project-b'
+      yamlFile 'kubernetespod.yaml'
+    }
+  }
+  environment {
+    ARTIFACTORY_MAVEN=credentials("artifactory-maven")
+    JFROG_CLI_OFFER_CONFIG=false
+  }
+  stages {
+    stage("Build Prep") {
+      steps {
+        container("sbt") {
+          sh """
+            sbt version
+          """
+        }
+        container("jfrog") {
+          sh """
+            jfrog --version
+          """
+        }
+      }
+    }
+    stage("project-a Build") {
+      steps {
+        dir("project-a") {
+          container("sbt") {
+            sh """
+              sbt clean stage
+            """
+          }
+          container("alpine-zip") {
+            sh """
+              ./eb-package.sh
+            """
+          }
+          container("jfrog") {
+            sh """
+              jfrog rt upload --url http://34.73.76.181/artifactory/topbean/ --user ${ARTIFACTORY_MAVEN_USR} --password ${ARTIFACTORY_MAVEN_PSW} "project-b*.zip" topbean/project-b/
+            """
+          }
+        }
+      }
+    }
+  }
+}
