@@ -30,6 +30,8 @@ pipeline {
           }
           container("alpine-zip") {
             sh """
+              pwd
+              ls -last
               ./eb-package.sh
               ls -last
             """
