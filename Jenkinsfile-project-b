@@ -24,9 +24,9 @@ pipeline {
         }
       }
     }
-    stage("project-a Build") {
+    stage("project-b Build") {
       steps {
-        dir("project-a") {
+        dir("project-b") {
           container("sbt") {
             sh """
               sbt clean stage
