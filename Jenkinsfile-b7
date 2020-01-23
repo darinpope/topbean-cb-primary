@@ -27,84 +27,85 @@ spec:
 """
     }
   }
+  stages {
+    stage("b7") {
+      steps {
 
-  stage("b7") {
-    steps {
+      dir("$env.WORKSPACE/btrack-ui-proxy") {
 
-    dir("$env.WORKSPACE/btrack-ui-proxy") {
+        script {
 
-      script {
+          if (DeployableJobList.contains('QA_BTrack_UI_Deployment_Pipeline_Job')) { 
 
-        if (DeployableJobList.contains('QA_BTrack_UI_Deployment_Pipeline_Job')) { 
+            echo "BTrack_UI Build Starts..."
 
-          echo "BTrack_UI Build Starts..."
+            withCredentials([usernamePassword(credentialsId: '1b1838dc-7a4e-4b24-a095-56bbdf799cf9', passwordVariable: 'artifactorypassword', usernameVariable: 'artifactoryusername')]) {
 
-          withCredentials([usernamePassword(credentialsId: '1b1838dc-7a4e-4b24-a095-56bbdf799cf9', passwordVariable: 'artifactorypassword', usernameVariable: 'artifactoryusername')]) {
+              sh  '''
 
-            sh  '''
+                #!/bin/sh
 
-              #!/bin/sh
+                ./build-dependencies
 
-              ./build-dependencies
+                # Configuration files are moved from its environment directory to conf directory in respective ENV_BTrack_UI_Deployment_Pipeline_Job
+                # configuration.
 
-              # Configuration files are moved from its environment directory to conf directory in respective ENV_BTrack_UI_Deployment_Pipeline_Job
-              # configuration.
+                cp -r ./conf/environments/qa  ./modules/btrack-web/conf/
+                cp -r ./conf/environments/stage  ./modules/btrack-web/conf/
+                cp -r ./conf/environments/production  ./modules/btrack-web/conf/
 
-              cp -r ./conf/environments/qa  ./modules/btrack-web/conf/
-              cp -r ./conf/environments/stage  ./modules/btrack-web/conf/
-              cp -r ./conf/environments/production  ./modules/btrack-web/conf/
+                cd ./modules/btrack-web/web
+                npm install grunt
+                npm install grunt-jsvalidate
+                npm install grunt-contrib-concat
+                npm install grunt-contrib-watch
+                npm install grunt-karma
+                npm install grunt-sass
+                npm install grunt-contrib-jshint
+                npm install grunt-env
+                npm install grunt-contrib-uglify
+                npm install grunt-contrib-clean
+                grunt prod-build --force
+                cd ../../..
+                sbt "project btrackweb" clean docker:stage
 
-              cd ./modules/btrack-web/web
-              npm install grunt
-              npm install grunt-jsvalidate
-              npm install grunt-contrib-concat
-              npm install grunt-contrib-watch
-              npm install grunt-karma
-              npm install grunt-sass
-              npm install grunt-contrib-jshint
-              npm install grunt-env
-              npm install grunt-contrib-uglify
-              npm install grunt-contrib-clean
-              grunt prod-build --force
-              cd ../../..
-              sbt "project btrackweb" clean docker:stage
+                cp -r $WORKSPACE/environment-configs/httpsconfig/ebextensions/nonprod  ./.ebextensions/nonprod-httpsconfig
+                cp -r $WORKSPACE/environment-configs/httpsconfig/ebextensions/production  ./.ebextensions/production-httpsconfig
 
-              cp -r $WORKSPACE/environment-configs/httpsconfig/ebextensions/nonprod  ./.ebextensions/nonprod-httpsconfig
-              cp -r $WORKSPACE/environment-configs/httpsconfig/ebextensions/production  ./.ebextensions/production-httpsconfig
+                #Include dynatrace config here if required.
 
-              #Include dynatrace config here if required.
+                cp -r $WORKSPACE/environment-configs/dynatrace/ebextensions/nonprod  ./.ebextensions/nonprod-dynatrace
+                cp -r $WORKSPACE/environment-configs/dynatrace/ebextensions/production  ./.ebextensions/production-dynatrace
 
-              cp -r $WORKSPACE/environment-configs/dynatrace/ebextensions/nonprod  ./.ebextensions/nonprod-dynatrace
-              cp -r $WORKSPACE/environment-configs/dynatrace/ebextensions/production  ./.ebextensions/production-dynatrace
-
-              cp -r .ebextensions/ modules/btrack-web/target/docker
-              cd modules/btrack-web/target/docker
+                cp -r .ebextensions/ modules/btrack-web/target/docker
+                cd modules/btrack-web/target/docker
 
 
 
-              TRACKING_TKT=$(echo $GIT_BRANCH| cut -d'-' -f 3)'-'$(echo $GIT_BRANCH| cut -d'-' -f 4)
-              zip -r btrack-ui-${TRACKING_TKT} .
-              #mkdir -p $WORKSPACE/BTS/StorageBuilds
-              #mv btrack-ui-${TRACKING_TKT}.zip $WORKSPACE/BTS/StorageBuilds
+                TRACKING_TKT=$(echo $GIT_BRANCH| cut -d'-' -f 3)'-'$(echo $GIT_BRANCH| cut -d'-' -f 4)
+                zip -r btrack-ui-${TRACKING_TKT} .
+                #mkdir -p $WORKSPACE/BTS/StorageBuilds
+                #mv btrack-ui-${TRACKING_TKT}.zip $WORKSPACE/BTS/StorageBuilds
 
-              sourceFile="btrack-ui-${TRACKING_TKT}.zip"
+                sourceFile="btrack-ui-${TRACKING_TKT}.zip"
 
-              artifact_md5=$(md5sum "$sourceFile" | sed -e 's/'"$sourceFile"'//g')
-              artifact_sha1=$(sha1sum "$sourceFile" | sed -e 's/'"$sourceFile"'//g')
+                artifact_md5=$(md5sum "$sourceFile" | sed -e 's/'"$sourceFile"'//g')
+                artifact_sha1=$(sha1sum "$sourceFile" | sed -e 's/'"$sourceFile"'//g')
 
-              curl -H "X-Checksum-Sha1:${artifact_sha1}" \
-              -H "X-Checksum-MD5:${artifact_md5}" \
-              -u ${artifactoryusername}:${artifactorypassword} \
-              -X PUT "https://devops-artifactory.firstdata.com/artifactory/releases/BTS/${sourceFile}" \
-              -T $sourceFile
+                curl -H "X-Checksum-Sha1:${artifact_sha1}" \
+                -H "X-Checksum-MD5:${artifact_md5}" \
+                -u ${artifactoryusername}:${artifactorypassword} \
+                -X PUT "https://devops-artifactory.firstdata.com/artifactory/releases/BTS/${sourceFile}" \
+                -T $sourceFile
 
-            '''
+              '''
+            }
+
+            echo "BTrack_UI Build and moving completed successfully."
+          } 
           }
-
-          echo "BTrack_UI Build and moving completed successfully."
-        } 
+         }
         }
-       }
       }
-    }
+  }  
 }
