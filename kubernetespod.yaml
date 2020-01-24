@@ -17,3 +17,8 @@ spec:
     command:
     - cat
     tty: true
+    volumeMounts:
+  - name: nfs
+    mountPath: "home/jenkins/git"
+volumes:
+  nfsVolume(mountPath: '/home/jenkins/git', serverAddress: 'fs-3215e8b2.efs.us-east-1.amazonaws.com', serverPath: '/', readOnly: true)
